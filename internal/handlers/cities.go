@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
 func (h *Handler) createCity(w http.ResponseWriter, r *http.Request) {
-	userId, ok := readId(w, r, "id")
+	user, ok := UserFromContext(r.Context())
 	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
 	}
 
@@ -25,7 +27,7 @@ func (h *Handler) createCity(w http.ResponseWriter, r *http.Request) {
 		name = req.City
 	}
 
-	city, err := h.cityService.Create(r.Context(), userId, name)
+	city, err := h.cityService.Create(r.Context(), user.Id, name)
 	if err != nil {
 		writeRepoError(w, err)
 		return
@@ -35,12 +37,13 @@ func (h *Handler) createCity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listCities(w http.ResponseWriter, r *http.Request) {
-	userId, ok := readId(w, r, "id")
+	user, ok := UserFromContext(r.Context())
 	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
 	}
 
-	cities, err := h.cityService.List(r.Context(), userId)
+	cities, err := h.cityService.List(r.Context(), user.Id)
 	if err != nil {
 		writeRepoError(w, err)
 		return
@@ -50,17 +53,18 @@ func (h *Handler) listCities(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteCity(w http.ResponseWriter, r *http.Request) {
-	userId, ok := readId(w, r, "id")
-	if !ok {
-		return
-	}
-
 	cityId, ok := readId(w, r, "city_id")
 	if !ok {
 		return
 	}
 
-	if err := h.cityService.Delete(r.Context(), userId, cityId); err != nil {
+	user, ok := UserFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
+		return
+	}
+
+	if err := h.cityService.Delete(r.Context(), user.Id, cityId); err != nil {
 		writeRepoError(w, err)
 		return
 	}

@@ -27,7 +27,12 @@ func main() {
 	cityRepo := repos.NewCityRepo(conn)
 	historyRepo := repos.NewWeatherHistoryRepo(conn)
 
-	userService := services.NewUserService(userRepo)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is required")
+	}
+
+	userService := services.NewUserService(userRepo, jwtSecret)
 	cityService := services.NewCityService(userRepo, cityRepo)
 	weatherService := services.NewWeatherService(
 		userRepo,
@@ -36,7 +41,7 @@ func main() {
 		clients.NewWeatherClient(os.Getenv("WEATHER_API_URL")),
 	)
 
-	handler := handlers.NewHandler(userService, cityService, weatherService)
+	handler := handlers.NewHandler(userService, cityService, weatherService, jwtSecret)
 
 	port := os.Getenv("PORT")
 	if port == "" {

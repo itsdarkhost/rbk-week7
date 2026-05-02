@@ -41,6 +41,14 @@ func writeRepoError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, err)
 	case errors.Is(err, services.ErrEmptyCity):
 		writeError(w, http.StatusBadRequest, err)
+	case errors.Is(err, services.ErrEmptyEmail),
+		errors.Is(err, services.ErrEmptyPassword),
+		errors.Is(err, services.ErrInvalidRole):
+		writeError(w, http.StatusBadRequest, err)
+	case errors.Is(err, services.ErrInvalidCredentials):
+		writeError(w, http.StatusUnauthorized, err)
+	case errors.Is(err, services.ErrEmailTaken):
+		writeError(w, http.StatusConflict, err)
 	default:
 		writeError(w, http.StatusInternalServerError, err)
 	}

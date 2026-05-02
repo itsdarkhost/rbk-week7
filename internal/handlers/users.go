@@ -1,27 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
 )
-
-func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Username string `json:"username"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	user, err := h.userService.Create(r.Context(), req.Username)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	writeJSON(w, http.StatusCreated, user)
-}
 
 func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userService.List(r.Context())
@@ -48,29 +30,6 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, user)
 }
 
-func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
-	id, ok := readId(w, r, "id")
-	if !ok {
-		return
-	}
-
-	var req struct {
-		Username string `json:"username"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	user, err := h.userService.Update(r.Context(), id, req.Username)
-	if err != nil {
-		writeRepoError(w, err)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, user)
-}
-
 func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	id, ok := readId(w, r, "id")
 	if !ok {
@@ -83,4 +42,20 @@ func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+	current, ok := UserFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
+		return
+	}
+
+	user, err := h.userService.Get(r.Context(), current.Id)
+	if err != nil {
+		writeRepoError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, user)
 }

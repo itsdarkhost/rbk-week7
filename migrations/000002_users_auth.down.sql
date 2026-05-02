@@ -1,0 +1,9 @@
+ALTER TABLE users
+DROP CONSTRAINT IF EXISTS users_role_check;
+
+DROP INDEX IF EXISTS idx_users_email_active;
+
+ALTER TABLE users
+DROP COLUMN IF EXISTS role,
+DROP COLUMN IF EXISTS password_hash,
+DROP COLUMN IF EXISTS email;

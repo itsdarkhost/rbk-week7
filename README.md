@@ -1,44 +1,65 @@
-# rbk-week3
+# rbk-week4
 
-Weather + Users API на Go + PostgreSQL.
+Weather + Users API на Go + PostgreSQL с JWT-аутентификацией.
 
 ## Запуск
 
 ```bash
 docker compose up -d
-go run ./cmd/api
+JWT_SECRET=dev-secret go run ./api
 ```
 
 По умолчанию сервер слушает `:8080`, PostgreSQL берется из `.env`.
+Для запуска API нужен `JWT_SECRET`.
 
 Миграции лежат в `migrations/` и применяются автоматически при старте API
 
 ## REST API
 
-Пользователи:
+Аутентификация:
 
 ```http
-POST   /users
-GET    /users
-GET    /users/{id}
-PUT    /users/{id}
-DELETE /users/{id}
+POST /auth/register
+POST /auth/login
 ```
 
-Тело для создания/обновления пользователя:
+Register body:
 
 ```json
 {
-  "username": "sultan"
+  "username": "sultan",
+  "email": "sultan@example.com",
+  "password": "secret"
 }
 ```
 
-Города пользователя:
+Login body:
+
+```json
+{
+  "email": "sultan@example.com",
+  "password": "secret"
+}
+```
+
+Все маршруты ниже требуют header:
 
 ```http
-POST   /users/{id}/cities
-GET    /users/{id}/cities
-DELETE /users/{id}/cities/{city_id}
+Authorization: Bearer <access_token>
+```
+
+Текущий пользователь:
+
+```http
+GET /users/me
+```
+
+Города текущего пользователя:
+
+```http
+POST   /cities
+GET    /cities
+DELETE /cities/{city_id}
 ```
 
 Body для добавления города:
@@ -52,6 +73,14 @@ Body для добавления города:
 Погода и история:
 
 ```http
-GET /users/{id}/weather
-GET /users/{id}/weather/history?city=Almaty&limit=10&offset=0
+GET /weather
+GET /weather/history?city=Almaty&limit=10&offset=0
+```
+
+Admin-only маршруты:
+
+```http
+GET    /users
+GET    /users/{id}
+DELETE /users/{id}
 ```

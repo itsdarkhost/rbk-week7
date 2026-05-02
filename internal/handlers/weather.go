@@ -1,14 +1,18 @@
 package handlers
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+)
 
 func (h *Handler) getWeather(w http.ResponseWriter, r *http.Request) {
-	userId, ok := readId(w, r, "id")
+	user, ok := UserFromContext(r.Context())
 	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
 	}
 
-	weather, err := h.weatherService.GetWeather(r.Context(), userId)
+	weather, err := h.weatherService.GetWeather(r.Context(), user.Id)
 	if err != nil {
 		writeRepoError(w, err)
 		return
@@ -18,8 +22,9 @@ func (h *Handler) getWeather(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) weatherHistory(w http.ResponseWriter, r *http.Request) {
-	userId, ok := readId(w, r, "id")
+	user, ok := UserFromContext(r.Context())
 	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
 	}
 
@@ -27,7 +32,7 @@ func (h *Handler) weatherHistory(w http.ResponseWriter, r *http.Request) {
 	offset := readQueryInt(r, "offset", 0)
 	city := r.URL.Query().Get("city")
 
-	history, err := h.weatherService.History(r.Context(), userId, city, limit, offset)
+	history, err := h.weatherService.History(r.Context(), user.Id, city, limit, offset)
 	if err != nil {
 		writeRepoError(w, err)
 		return
