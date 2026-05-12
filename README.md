@@ -1,4 +1,4 @@
-# rbk-week4
+# rbk-week5
 
 Weather + Users API на Go + PostgreSQL с JWT-аутентификацией.
 
