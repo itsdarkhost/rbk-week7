@@ -3,6 +3,8 @@ package handlers
 import (
 	"errors"
 	"net/http"
+
+	"github.com/itsdarkhost/rbk-week4/internal/middleware"
 )
 
 func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +47,7 @@ func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
-	current, ok := UserFromContext(r.Context())
+	current, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return

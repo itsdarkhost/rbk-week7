@@ -3,10 +3,12 @@ package handlers
 import (
 	"errors"
 	"net/http"
+
+	"github.com/itsdarkhost/rbk-week4/internal/middleware"
 )
 
 func (h *Handler) getWeather(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
@@ -22,7 +24,7 @@ func (h *Handler) getWeather(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) weatherHistory(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return

@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/itsdarkhost/rbk-week4/internal/middleware"
 )
 
 func (h *Handler) createCity(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
@@ -37,7 +39,7 @@ func (h *Handler) createCity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listCities(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return
@@ -58,7 +60,7 @@ func (h *Handler) deleteCity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := UserFromContext(r.Context())
+	user, ok := middleware.UserFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, errors.New("user is required"))
 		return

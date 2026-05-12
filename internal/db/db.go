@@ -2,8 +2,6 @@ package db
 
 import (
 	"errors"
-	"fmt"
-	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,18 +11,17 @@ import (
 )
 
 // MARK: Connect
-func Connect() (*sqlx.DB, error) {
-	return sqlx.Connect("postgres", DSN())
+func Connect(dsn string) (*sqlx.DB, error) {
+	return sqlx.Connect("postgres", dsn)
 }
 
 // MARK: Migrate
-func Migrate(db *sqlx.DB) error {
+func Migrate(db *sqlx.DB, migrationsPath string) error {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return err
 	}
 
-	migrationsPath := getEnv("MIGRATIONS_PATH", "file://migrations")
 	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "postgres", driver)
 	if err != nil {
 		return err
@@ -36,28 +33,4 @@ func Migrate(db *sqlx.DB) error {
 	}
 
 	return err
-}
-
-func DSN() string {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn != "" {
-		return dsn
-	}
-
-	user := getEnv("POSTGRES_USER", "postgres")
-	password := getEnv("POSTGRES_PASSWORD", "postgres")
-	name := getEnv("POSTGRES_DB", "postgres")
-	host := getEnv("POSTGRES_HOST", "localhost")
-	port := getEnv("POSTGRES_PORT", "5432")
-
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, name)
-}
-
-func getEnv(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-
-	return value
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/itsdarkhost/rbk-week4/internal/middleware"
 	"github.com/itsdarkhost/rbk-week4/internal/services"
 )
 
@@ -33,7 +34,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Post("/auth/login", h.login)
 
 	r.Group(func(r chi.Router) {
-		r.Use(h.AuthMiddleware)
+		r.Use(middleware.Auth(h.jwtSecret))
 
 		r.Get("/users/me", h.me)
 		r.Post("/cities", h.createCity)
@@ -43,7 +44,7 @@ func (h *Handler) Routes() http.Handler {
 		r.Get("/weather/history", h.weatherHistory)
 
 		r.Group(func(r chi.Router) {
-			r.Use(RequireRole("admin"))
+			r.Use(middleware.RequireRole("admin"))
 			r.Get("/users", h.listUsers)
 			r.Get("/users/{id}", h.getUser)
 			r.Delete("/users/{id}", h.deleteUser)
