@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/itsdarkhost/rbk-week4/internal/middleware"
 	"github.com/itsdarkhost/rbk-week4/internal/services"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -13,21 +14,29 @@ type Handler struct {
 	cityService    *services.CityService
 	weatherService *services.WeatherService
 	jwtSecret      []byte
+	logger         *zap.Logger
 }
 
 // MARK: New Handler
-func NewHandler(userService *services.UserService, cityService *services.CityService, weatherService *services.WeatherService, jwtSecret string) *Handler {
+func NewHandler(userService *services.UserService, cityService *services.CityService, weatherService *services.WeatherService, jwtSecret string, loggers ...*zap.Logger) *Handler {
+	logger := zap.NewNop()
+	if len(loggers) > 0 && loggers[0] != nil {
+		logger = loggers[0]
+	}
+
 	return &Handler{
 		userService:    userService,
 		cityService:    cityService,
 		weatherService: weatherService,
 		jwtSecret:      []byte(jwtSecret),
+		logger:         logger,
 	}
 }
 
 // MARK: Routes
 func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.RequestLogger(h.logger))
 
 	r.Get("/health", h.health)
 	r.Post("/auth/register", h.register)

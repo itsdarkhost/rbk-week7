@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/itsdarkhost/rbk-week4/internal/clients"
@@ -10,22 +9,29 @@ import (
 	"github.com/itsdarkhost/rbk-week4/internal/handlers"
 	"github.com/itsdarkhost/rbk-week4/internal/repos"
 	"github.com/itsdarkhost/rbk-week4/internal/services"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("failed to load config", zap.Error(err))
 	}
 
 	conn, err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("failed to connect database", zap.Error(err))
 	}
 	defer conn.Close()
 
 	if err := db.Migrate(conn, cfg.MigrationsPath); err != nil {
-		log.Fatal(err)
+		logger.Fatal("failed to run migrations", zap.Error(err))
 	}
 
 	userRepo := repos.NewUserRepo(conn)
@@ -41,8 +47,10 @@ func main() {
 		clients.NewWeatherClient(cfg.WeatherAPIURL),
 	)
 
-	handler := handlers.NewHandler(userService, cityService, weatherService, cfg.JWTSecret)
+	handler := handlers.NewHandler(userService, cityService, weatherService, cfg.JWTSecret, logger)
 
-	log.Printf("server started on :%s", cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, handler.Routes()))
+	logger.Info("server started", zap.String("port", cfg.Port))
+	if err := http.ListenAndServe(":"+cfg.Port, handler.Routes()); err != nil {
+		logger.Fatal("server stopped", zap.Error(err))
+	}
 }

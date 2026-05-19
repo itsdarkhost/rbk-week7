@@ -6,18 +6,23 @@ import (
 	"strings"
 
 	"github.com/itsdarkhost/rbk-week4/internal/models"
-	"github.com/itsdarkhost/rbk-week4/internal/repos"
 )
 
 var ErrEmptyCity = errors.New("city is required")
 
+type CityRepository interface {
+	Create(ctx context.Context, userId int, name string) (*models.City, error)
+	List(ctx context.Context, userId int) ([]models.City, error)
+	Delete(ctx context.Context, userId int, cityId int) error
+}
+
 type CityService struct {
-	userRepo *repos.UserRepo
-	cityRepo *repos.CityRepo
+	userRepo UserRepository
+	cityRepo CityRepository
 }
 
 // MARK: New City Service
-func NewCityService(userRepo *repos.UserRepo, cityRepo *repos.CityRepo) *CityService {
+func NewCityService(userRepo UserRepository, cityRepo CityRepository) *CityService {
 	return &CityService{userRepo: userRepo, cityRepo: cityRepo}
 }
 

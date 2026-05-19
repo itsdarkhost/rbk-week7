@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/itsdarkhost/rbk-week4/internal/models"
-	"github.com/itsdarkhost/rbk-week4/internal/repos"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,13 +21,22 @@ var (
 	ErrInvalidRole        = errors.New("invalid role")
 )
 
+type UserRepository interface {
+	List(ctx context.Context) ([]models.User, error)
+	Get(ctx context.Context, id int) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	Create(ctx context.Context, username string, email string, passwordHash string, role string) (*models.User, error)
+	Update(ctx context.Context, id int, username string) (*models.User, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type UserService struct {
-	repo      *repos.UserRepo
+	repo      UserRepository
 	jwtSecret []byte
 }
 
 // MARK: New User Service
-func NewUserService(repo *repos.UserRepo, jwtSecret string) *UserService {
+func NewUserService(repo UserRepository, jwtSecret string) *UserService {
 	return &UserService{repo: repo, jwtSecret: []byte(jwtSecret)}
 }
 

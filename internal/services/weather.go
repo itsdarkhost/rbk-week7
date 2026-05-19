@@ -7,11 +7,15 @@ import (
 	"time"
 
 	"github.com/itsdarkhost/rbk-week4/internal/models"
-	"github.com/itsdarkhost/rbk-week4/internal/repos"
 )
 
 type WeatherClient interface {
 	GetWeather(ctx context.Context, city string) (*models.Weather, error)
+}
+
+type WeatherHistoryRepository interface {
+	Create(ctx context.Context, userId int, weather models.Weather) (*models.WeatherHistory, error)
+	List(ctx context.Context, userId int, city string, limit int, offset int) ([]models.WeatherHistory, error)
 }
 
 type cachedWeather struct {
@@ -20,16 +24,16 @@ type cachedWeather struct {
 }
 
 type WeatherService struct {
-	userRepo    *repos.UserRepo
-	cityRepo    *repos.CityRepo
-	historyRepo *repos.WeatherHistoryRepo
+	userRepo    UserRepository
+	cityRepo    CityRepository
+	historyRepo WeatherHistoryRepository
 	client      WeatherClient
 	cache       map[string]cachedWeather
 	mu          sync.Mutex
 }
 
 // MARK: New Weather Service
-func NewWeatherService(userRepo *repos.UserRepo, cityRepo *repos.CityRepo, historyRepo *repos.WeatherHistoryRepo, client WeatherClient) *WeatherService {
+func NewWeatherService(userRepo UserRepository, cityRepo CityRepository, historyRepo WeatherHistoryRepository, client WeatherClient) *WeatherService {
 	return &WeatherService{
 		userRepo:    userRepo,
 		cityRepo:    cityRepo,
