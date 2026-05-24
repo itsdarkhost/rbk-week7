@@ -1,8 +1,44 @@
 services:
-  db:
+  postgres:
     image: postgres:18
     restart: unless-stopped
     env_file:
       - .env
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-service:
+    build:
+      context: ./api-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 8080
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MIGRATIONS_PATH: file://migrations
+      WEATHER_API_URL: http://gateway-service:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+    restart: unless-stopped
+    environment:
+      PORT: 8081
+      API_SERVICE_URL: http://api-service:8080
+      EXTERNAL_WEATHER_API_URL: https://wttr.in
+    depends_on:
+      - api-service
+    ports:
+      - "8081:8081"

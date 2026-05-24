@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/itsdarkhost/rbk-week4/internal/models"
+	"github.com/itsdarkhost/rbk-week4/gateway-service/internal/models"
 )
 
 type WeatherClient struct {
@@ -17,7 +17,6 @@ type WeatherClient struct {
 	client  *http.Client
 }
 
-// MARK: New Weather Client
 func NewWeatherClient(baseURL string) *WeatherClient {
 	if baseURL == "" {
 		baseURL = "https://wttr.in"
@@ -29,7 +28,6 @@ func NewWeatherClient(baseURL string) *WeatherClient {
 	}
 }
 
-// MARK: Get Weather
 func (c *WeatherClient) GetWeather(ctx context.Context, city string) (*models.Weather, error) {
 	endpoint := fmt.Sprintf("%s/%s?format=j1", c.baseURL, url.PathEscape(city))
 
@@ -45,7 +43,7 @@ func (c *WeatherClient) GetWeather(ctx context.Context, city string) (*models.We
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("weather api returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("external weather api returned status %d", resp.StatusCode)
 	}
 
 	var body struct {
@@ -61,7 +59,7 @@ func (c *WeatherClient) GetWeather(ctx context.Context, city string) (*models.We
 		return nil, err
 	}
 	if len(body.CurrentCondition) == 0 {
-		return nil, fmt.Errorf("weather api returned empty response")
+		return nil, fmt.Errorf("external weather api returned empty response")
 	}
 
 	temp, err := strconv.ParseFloat(body.CurrentCondition[0].TempC, 64)

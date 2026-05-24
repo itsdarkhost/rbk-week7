@@ -1,4 +1,4 @@
-package services
+package services_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/itsdarkhost/rbk-week4/internal/models"
+	"github.com/itsdarkhost/rbk-week4/internal/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,7 @@ func (m *mockWeatherClient) GetWeather(ctx context.Context, city string) (*model
 func TestUserServiceRegister(t *testing.T) {
 	t.Run("creates user with normalized input", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 		expected := &models.User{Id: 1, Username: "Alice", Email: "alice@example.com", Role: "user"}
 
 		repo.On("Create",
@@ -125,38 +126,38 @@ func TestUserServiceRegister(t *testing.T) {
 
 	t.Run("validates empty email", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 
 		user, err := service.Register(context.Background(), "Alice", " ", "pass123", "user")
 
-		require.ErrorIs(t, err, ErrEmptyEmail)
+		require.ErrorIs(t, err, services.ErrEmptyEmail)
 		assert.Nil(t, user)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("validates empty password", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 
 		user, err := service.Register(context.Background(), "Alice", "alice@example.com", " ", "user")
 
-		require.ErrorIs(t, err, ErrEmptyPassword)
+		require.ErrorIs(t, err, services.ErrEmptyPassword)
 		assert.Nil(t, user)
 	})
 
 	t.Run("validates invalid role", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 
 		user, err := service.Register(context.Background(), "Alice", "alice@example.com", "pass123", "manager")
 
-		require.ErrorIs(t, err, ErrInvalidRole)
+		require.ErrorIs(t, err, services.ErrInvalidRole)
 		assert.Nil(t, user)
 	})
 
 	t.Run("returns repository error", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 		repoErr := errors.New("insert failed")
 
 		repo.On("Create", mock.Anything, "alice@example.com", "alice@example.com", mock.AnythingOfType("string"), "user").
@@ -176,7 +177,7 @@ func TestUserServiceLogin(t *testing.T) {
 
 	t.Run("returns signed token", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 		repo.On("GetByEmail", mock.Anything, "alice@example.com").
 			Return(&models.User{Id: 1, Email: "alice@example.com", PasswordHash: string(hash), Role: "admin"}, nil).Once()
 
@@ -189,37 +190,37 @@ func TestUserServiceLogin(t *testing.T) {
 
 	t.Run("rejects blank credentials", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 
 		token, err := service.Login(context.Background(), "", "pass123")
 
-		require.ErrorIs(t, err, ErrInvalidCredentials)
+		require.ErrorIs(t, err, services.ErrInvalidCredentials)
 		assert.Empty(t, token)
 		repo.AssertNotCalled(t, "GetByEmail", mock.Anything, mock.Anything)
 	})
 
 	t.Run("hides missing user", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 		repo.On("GetByEmail", mock.Anything, "missing@example.com").
 			Return((*models.User)(nil), sql.ErrNoRows).Once()
 
 		token, err := service.Login(context.Background(), "missing@example.com", "pass123")
 
-		require.ErrorIs(t, err, ErrInvalidCredentials)
+		require.ErrorIs(t, err, services.ErrInvalidCredentials)
 		assert.Empty(t, token)
 		repo.AssertExpectations(t)
 	})
 
 	t.Run("rejects wrong password", func(t *testing.T) {
 		repo := new(mockUserRepository)
-		service := NewUserService(repo, "secret")
+		service := services.NewUserService(repo, "secret")
 		repo.On("GetByEmail", mock.Anything, "alice@example.com").
 			Return(&models.User{Id: 1, Email: "alice@example.com", PasswordHash: string(hash), Role: "user"}, nil).Once()
 
 		token, err := service.Login(context.Background(), "alice@example.com", "wrong")
 
-		require.ErrorIs(t, err, ErrInvalidCredentials)
+		require.ErrorIs(t, err, services.ErrInvalidCredentials)
 		assert.Empty(t, token)
 		repo.AssertExpectations(t)
 	})
@@ -227,7 +228,7 @@ func TestUserServiceLogin(t *testing.T) {
 
 func TestUserServiceSimpleMethods(t *testing.T) {
 	repo := new(mockUserRepository)
-	service := NewUserService(repo, "secret")
+	service := services.NewUserService(repo, "secret")
 	expected := &models.User{Id: 5, Username: "updated"}
 
 	repo.On("List", mock.Anything).Return([]models.User{{Id: 1}}, nil).Once()
@@ -255,7 +256,7 @@ func TestCityService(t *testing.T) {
 	t.Run("creates trimmed city after user exists", func(t *testing.T) {
 		userRepo := new(mockUserRepository)
 		cityRepo := new(mockCityRepository)
-		service := NewCityService(userRepo, cityRepo)
+		service := services.NewCityService(userRepo, cityRepo)
 
 		userRepo.On("Get", mock.Anything, 1).Return(&models.User{Id: 1}, nil).Once()
 		cityRepo.On("Create", mock.Anything, 1, "Almaty").
@@ -272,13 +273,13 @@ func TestCityService(t *testing.T) {
 	t.Run("rejects empty city", func(t *testing.T) {
 		userRepo := new(mockUserRepository)
 		cityRepo := new(mockCityRepository)
-		service := NewCityService(userRepo, cityRepo)
+		service := services.NewCityService(userRepo, cityRepo)
 
 		userRepo.On("Get", mock.Anything, 1).Return(&models.User{Id: 1}, nil).Once()
 
 		city, err := service.Create(context.Background(), 1, " ")
 
-		require.ErrorIs(t, err, ErrEmptyCity)
+		require.ErrorIs(t, err, services.ErrEmptyCity)
 		assert.Nil(t, city)
 		cityRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
 	})
@@ -290,7 +291,7 @@ func TestWeatherService(t *testing.T) {
 		cityRepo := new(mockCityRepository)
 		historyRepo := new(mockWeatherHistoryRepository)
 		client := new(mockWeatherClient)
-		service := NewWeatherService(userRepo, cityRepo, historyRepo, client)
+		service := services.NewWeatherService(userRepo, cityRepo, historyRepo, client)
 		weather := models.Weather{City: "Almaty", Temperature: 21.5, Description: "clear"}
 		history := &models.WeatherHistory{Id: 1, UserId: 1, City: "Almaty", Temperature: 21.5, Description: "clear", RequestedAt: time.Now()}
 
@@ -315,7 +316,7 @@ func TestWeatherService(t *testing.T) {
 		cityRepo := new(mockCityRepository)
 		historyRepo := new(mockWeatherHistoryRepository)
 		client := new(mockWeatherClient)
-		service := NewWeatherService(userRepo, cityRepo, historyRepo, client)
+		service := services.NewWeatherService(userRepo, cityRepo, historyRepo, client)
 		expected := []models.WeatherHistory{{Id: 1, City: "Almaty"}}
 
 		userRepo.On("Get", mock.Anything, 1).Return(&models.User{Id: 1}, nil).Once()

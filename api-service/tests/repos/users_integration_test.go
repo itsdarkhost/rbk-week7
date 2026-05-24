@@ -1,9 +1,10 @@
-package repos
+package repos_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/itsdarkhost/rbk-week4/internal/repos"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,7 @@ func TestUserRepoIntegrationCreateAndRead(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	repo := NewUserRepo(db)
+	repo := repos.NewUserRepo(db)
 	ctx := context.Background()
 
 	created, err := repo.Create(ctx, "Alice", "alice@example.com", "hash", "admin")
